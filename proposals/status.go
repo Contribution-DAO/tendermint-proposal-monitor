@@ -1,0 +1,17 @@
+package proposals
+
+var (
+	ProposalStatusName = map[int32]string{
+		0: "PROPOSAL_STATUS_UNSPECIFIED",
+		1: "PROPOSAL_STATUS_VOTING_PERIOD",
+		2: "PROPOSAL_STATUS_PASSED",
+		3: "PROPOSAL_STATUS_REJECTED",
+	}
+
+	ProposalStatusValue = map[string]int32{
+		"PROPOSAL_STATUS_UNSPECIFIED":   0,
+		"PROPOSAL_STATUS_VOTING_PERIOD": 1,
+		"PROPOSAL_STATUS_PASSED":        2,
+		"PROPOSAL_STATUS_REJECTED":      3,
+	}
+)
