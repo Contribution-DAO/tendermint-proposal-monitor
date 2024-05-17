@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"tendermint_proposal_monitor/config"
 )
 
 // Proposal represents a governance proposal with common fields for both v1 and v1beta1 endpoints
@@ -57,7 +58,8 @@ func mockProposals() []Proposal {
 	}
 }
 
-func Fetch(apiEndpoint, sdkVersion string, useMock bool) ([]Proposal, error) {
+func Fetch(chain config.ChainConfig, sdkVersion string, useMock bool) ([]Proposal, error) {
+	apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals", chain.Alerts.APIEndpoint, chain.SDKVersion)
 	if useMock {
 		return mockProposals(), nil
 	}

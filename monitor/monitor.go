@@ -50,8 +50,7 @@ func Run(cfg *config.Config, useMock bool) error {
 	log.Printf("Checking for new proposals...")
 
 	for chainName, chain := range cfg.Chains {
-		apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals", chain.Alerts.APIEndpoint, chain.SDKVersion)
-		propList, err := proposals.Fetch(apiEndpoint, chain.SDKVersion, useMock)
+		propList, err := proposals.Fetch(chain, chain.SDKVersion, useMock)
 		if err != nil {
 			log.Printf("Error fetching proposals for chain %s: %v", chainName, err)
 			continue
