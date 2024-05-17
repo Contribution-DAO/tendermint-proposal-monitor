@@ -1,4 +1,3 @@
-```markdown
 # Proposal Monitor
 
 Proposal Monitor is a Go-based application that monitors governance proposals on multiple blockchain networks and sends alerts to channels. It is designed to be lightweight and easy to deploy, with configuration options to customize the monitoring behavior for different chains.
@@ -102,5 +101,4 @@ To test the application with mock data, use the `--mock` flag when running the a
 
 ```sh
 ./proposal_monitor --mock
-```
 ```
