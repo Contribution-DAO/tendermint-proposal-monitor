@@ -1,26 +1,21 @@
 # Global settings
-check_interval: 600 # The interval (in seconds) at which the monitor checks for new proposals
-
-# Healthcheck settings
-healthcheck:
-  enabled: no # Enable or disable healthcheck
-  ping_url: https://hc-ping.com/path # URL to send pings for healthcheck
-  ping_rate: 60 # Rate (in seconds) at which pings are sent
+validator_address: "your_validator_address_here"  # The address of the validator to monitor.
+proposal_detail_domain: "https://www.mintscan.io"  # The base URL for viewing proposal details. This can be customized if you use a different domain.
+voting_alert_behavior_nearing: "only_if_not_voted"  # Specifies when to send alerts near the end of the voting period. Options: "always" to always send alerts, "only_if_not_voted" to send alerts only if the validator hasn't voted.
 
 # Chains to be monitored
 chains:
   "ChainA":
-    chain_id: cosmoshub-4 # The ID of the chain
+    chain_id: "cosmoshub-4"  # The ID of the chain.
+    sdk_version: "v1"  # The version of the Cosmos SDK API to use. Options are "v1" or "v1beta1".
     alerts:
-      api_endpoint: https://yourdomain/cosmos/gov/v1beta1/proposals # API endpoint to fetch proposals
+      api_endpoint: "https://yourdomain.com"  # The API endpoint to fetch proposals.
       discord:
-        enabled: yes # Enable or disable Discord alerts for this chain
-        webhook: https://discord.com/api/webhooks/path # Discord webhook URL for this chain
-
+        webhook: "https://discord.com/api/webhooks/path"  # The Discord webhook URL to send alerts.
   "ChainB":
-    chain_id: cosmoshub-4 # The ID of the chain
+    chain_id: "cosmoshub-4"  # The ID of the chain.
+    sdk_version: "v1beta1"  # The version of the Cosmos SDK API to use. Options are "v1" or "v1beta1".
     alerts:
-      api_endpoint: https://yourdomain/cosmos/gov/v1beta1/proposals # API endpoint to fetch proposals
+      api_endpoint: "https://yourdomain.com"  # The API endpoint to fetch proposals.
       discord:
-        enabled: no # Enable or disable Discord alerts for this chain
-        webhook: https://discord.com/api/webhooks/path # Discord webhook URL for this chain
+        webhook: "https://discord.com/api/webhooks/path"  # The Discord webhook URL to send alerts.

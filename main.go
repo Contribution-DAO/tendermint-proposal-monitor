@@ -3,29 +3,64 @@ package main
 import (
 	"flag"
 	"log"
+	"net/http"
+	"os"
 	"tendermint_proposal_monitor/config"
 	"tendermint_proposal_monitor/monitor"
 )
 
-func main() {
-	useMock := flag.Bool("mock", false, "Use mock data for testing")
-	configFile := flag.String("config", "config/config.yml", "Path to configuration file")
+var (
+	cfg       *config.Config
+	globalErr error
+	useMock   bool
+)
+
+func init() {
+	flag.BoolVar(&useMock, "mock", false, "Use mock data for testing")
+	configFile := flag.String("config", getEnv("CONFIG_FILE", "config/config.yml"), "Path to configuration file")
 	flag.Parse()
 
 	log.Println("Starting Proposal Monitor Service...")
 	log.Printf("Using configuration file: %s\n", *configFile)
 
-	cfg, err := config.LoadConfig(*configFile)
-	if err != nil {
-		log.Fatalf("Error loading config: %v", err)
+	cfg, globalErr = config.LoadConfig(*configFile)
+	if globalErr != nil {
+		log.Fatalf("Error loading config: %v", globalErr)
 	}
 
-	log.Printf("Configuration loaded successfully. Check interval: %d seconds\n", cfg.CheckInterval)
+	log.Printf("Configuration loaded successfully.")
+}
 
-	err = monitor.Run(cfg, *useMock)
-	if err != nil {
-		log.Fatalf("Error running monitor: %v", err)
+func getEnv(key, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func triggerMonitor(w http.ResponseWriter, r *http.Request) {
+	if globalErr != nil {
+		http.Error(w, "Configuration error, unable to run monitor", http.StatusInternalServerError)
+		return
 	}
 
-	log.Println("Proposal Monitor Service is running.")
+	// Check for mock query parameter
+	mock := r.URL.Query().Get("mock")
+	useMock := mock == "true"
+
+	err := monitor.Run(cfg, useMock)
+	if err != nil {
+		log.Printf("Error running monitor: %v", err)
+		http.Error(w, "Error running monitor", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Monitor triggered successfully"))
+}
+
+func main() {
+	http.HandleFunc("/trigger-monitor", triggerMonitor)
+	log.Println("Server started on port 3000")
+	log.Fatal(http.ListenAndServe(":3000", nil))
 }

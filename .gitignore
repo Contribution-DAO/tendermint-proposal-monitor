@@ -1,6 +1,5 @@
 config.yml
 config.yml.asc
-docker-compose.yml
 local*
 
 .idea

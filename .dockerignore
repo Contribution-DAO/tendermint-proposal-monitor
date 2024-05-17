@@ -1,0 +1,17 @@
+# Ignore the Go cache
+/go
+
+# Ignore the binary files
+proposal_monitor
+
+# Ignore the vendor directory (if you are not using vendoring)
+vendor
+
+# Ignore the config files (optional, if they are not needed in the Docker image)
+<!-- config/*.yml -->
+
+# Ignore other unnecessary files and directories
+.git
+.gitignore
+Dockerfile
+README.md
