@@ -30,7 +30,7 @@ type VoteResponseV1Beta1 struct {
 }
 
 func CheckValidatorVoted(chain config.ChainConfig, proposalID string, validatorAddress string, sdkVersion string) (bool, error) {
-	voteCheckURL := fmt.Sprintf("%s/cosmos/gov/%s/proposals/%s/votes/%s", chain.Alerts.APIEndpoint, sdkVersion, proposalID, validatorAddress)
+	voteCheckURL := fmt.Sprintf("%s/cosmos/gov/%s/proposals/%s/votes/%s", chain.APIEndpoint, sdkVersion, proposalID, validatorAddress)
 	resp, err := http.Get(voteCheckURL)
 	if err != nil {
 		return false, fmt.Errorf("error fetching vote status for proposal %s: %w", proposalID, err)

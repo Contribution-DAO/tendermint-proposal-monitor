@@ -7,7 +7,6 @@ import (
 )
 
 type Config struct {
-	ValidatorAddress           string                 `yaml:"validator_address"`
 	ProposalDetailDomain       string                 `yaml:"proposal_detail_domain"`
 	VotingAlertBehaviorNearing string                 `yaml:"voting_alert_behavior_nearing"`
 	Discord                    DiscordConfig          `yaml:"discord"`
@@ -15,18 +14,22 @@ type Config struct {
 }
 
 type DiscordConfig struct {
+	Enabled bool   `yaml:"enabled"`
 	Webhook string `yaml:"webhook"`
 }
 
 type ChainConfig struct {
-	ChainID    string      `yaml:"chain_id"`
-	SDKVersion string      `yaml:"sdk_version"`
-	Alerts     AlertConfig `yaml:"alerts"`
+	ChainID          string      `yaml:"chain_id"`
+	ValidatorAddress string      `yaml:"validator_address"`
+	APIVersion       string      `yaml:"api_version"`
+	APIEndpoint      string      `yaml:"api_endpoint"`
+	ExplorerURL      string      `yaml:"explorer_url"`
+	Alerts           AlertConfig `yaml:"alerts"`
 }
 
 type AlertConfig struct {
-	APIEndpoint string `yaml:"api_endpoint"`
-	Discord     struct {
+	Discord struct {
+		Enabled bool   `yaml:"enabled"`
 		Webhook string `yaml:"webhook"`
 	} `yaml:"discord"`
 }

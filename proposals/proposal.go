@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"tendermint_proposal_monitor/config"
 )
 
@@ -59,7 +58,7 @@ func mockProposals() []Proposal {
 }
 
 func Fetch(chain config.ChainConfig, sdkVersion string, useMock bool) ([]Proposal, error) {
-	apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals", chain.Alerts.APIEndpoint, chain.SDKVersion)
+	apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals", chain.APIEndpoint, chain.APIVersion)
 	if useMock {
 		return mockProposals(), nil
 	}
@@ -154,31 +153,4 @@ func mapProposalsV1Beta1(proposals []ProposalV1Beta1) []Proposal {
 		})
 	}
 	return mapped
-}
-
-func GetAlertedProposals(filename string) (map[string]bool, error) {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return make(map[string]bool), nil
-		}
-		return nil, err
-	}
-
-	var alertedProposals map[string]bool
-	err = json.Unmarshal(data, &alertedProposals)
-	if err != nil {
-		return nil, err
-	}
-
-	return alertedProposals, nil
-}
-
-func SaveAlertedProposals(filename string, alertedProposals map[string]bool) error {
-	data, err := json.Marshal(alertedProposals)
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(filename, data, 0644)
 }

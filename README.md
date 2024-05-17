@@ -22,27 +22,27 @@ Create a `config.yml` file in the `config/` directory with the following structu
 
 ```yaml
 # Global settings
-validator_address: "your_validator_address_here"  # The address of the validator to monitor.
-proposal_detail_domain: "https://www.mintscan.io"  # The base URL for viewing proposal details. This can be customized if you use a different domain.
-voting_alert_behavior_nearing: "only_if_not_voted"  # Specifies when to send alerts near the end of the voting period. Options: "always", "only_if_not_voted".
+proposal_detail_domain: "https://www.mintscan.io" # The base URL for viewing proposal details. This can be customized if you use a different domain.
+voting_alert_behavior_nearing: "only_if_not_voted" # Specifies when to send alerts near the end of the voting period. Options: "always" to always send alerts, "only_if_not_voted" to send alerts only if the validator hasn't voted.
+
+#Discord Settings
+discord:
+  enabled: yes
+  webhook: "https://discord.com/api/webhooks/path" # The Discord webhook URL to send alerts.
 
 # Chains to be monitored
 chains:
-  "ChainA":
-    chain_id: "cosmoshub-4"  # The ID of the chain.
-    sdk_version: "v1"  # The version of the Cosmos SDK API to use. Options are "v1" or "v1beta1".
+  "Axelar":
+    chain_id: "axelar-dojo-1" # The ID of the chain.
+    validator_address: "your_validator_address_here" # The address of the validator to monitor.
+    api_version: "v1" # The version of the Cosmos SDK API to use. Options are "v1" or "v1beta1".
+    api_endpoint: "https://yourdomain.com" # The API endpoint to fetch proposals.
+    explorer_url: "https://www.mintscan.io/axelar/proposals" # uses default if blank
     alerts:
-      api_endpoint: "https://yourdomain.com"  # The API endpoint to fetch proposals.
       discord:
-        webhook: "https://discord.com/api/webhooks/path"  # The Discord webhook URL to send alerts.
+        enabled: yes
+        webhook: "" # uses default if blank
 
-  "ChainB":
-    chain_id: "cosmoshub-4"  # The ID of the chain.
-    sdk_version: "v1beta1"  # The version of the Cosmos SDK API to use. Options are "v1" or "v1beta1".
-    alerts:
-      api_endpoint: "https://yourdomain.com"  # The API endpoint to fetch proposals.
-      discord:
-        webhook: "https://discord.com/api/webhooks/path"  # The Discord webhook URL to send alerts.
 ```
 
 ## Running the Application
