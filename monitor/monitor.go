@@ -36,13 +36,13 @@ func Run(cfg *config.Config, useMock bool) error {
 	alertedProposals, err := proposals.GetAlertedProposals(FileAlertedProposals)
 	if err != nil {
 		log.Printf("Error loading alerted proposals, defaulting to empty: %v", err)
-		alertedProposals = make(map[string]bool)
+		alertedProposals = make(map[string]map[string]bool)
 	}
 
 	votingEndAlertedProposals, err := proposals.GetAlertedProposals(FileVotingEndAlerted)
 	if err != nil {
 		log.Printf("Error loading voting end alerted proposals, defaulting to empty: %v", err)
-		votingEndAlertedProposals = make(map[string]bool)
+		votingEndAlertedProposals = make(map[string]map[string]bool)
 	}
 
 	globalDiscordNotifier := &notifiers.DiscordNotifier{WebhookURL: cfg.Discord.Webhook}
@@ -50,8 +50,7 @@ func Run(cfg *config.Config, useMock bool) error {
 	log.Printf("Checking for new proposals...")
 
 	for chainName, chain := range cfg.Chains {
-		apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals", chain.Alerts.APIEndpoint, chain.SDKVersion)
-		propList, err := proposals.Fetch(apiEndpoint, chain.SDKVersion, useMock)
+		propList, err := proposals.Fetch(chain, chain.APIVersion, useMock)
 		if err != nil {
 			log.Printf("Error fetching proposals for chain %s: %v", chainName, err)
 			continue
@@ -72,9 +71,16 @@ func Run(cfg *config.Config, useMock bool) error {
 
 			// Check if the proposal is new and alert if it hasn't been alerted yet
 			if proposalID > lastChecked[chainName] {
-				sendDiscordAlert(cfg, chain, chainName, proposal, globalDiscordNotifier, AlertTypeNewProposal)
+				err = sendDiscordAlert(cfg, chain, chainName, proposal, globalDiscordNotifier, AlertTypeNewProposal)
+				if err != nil {
+					log.Printf("Error sending alert for new proposal: %v", err)
+					continue
+				}
 				lastChecked[chainName] = proposalID
-				alertedProposals[proposal.ProposalID] = true
+				if alertedProposals[chainName] == nil {
+					alertedProposals[chainName] = make(map[string]bool)
+				}
+				alertedProposals[chainName][proposal.ProposalID] = true
 				err = proposals.SaveLastCheckedProposalIDs(FileLastChecked, lastChecked)
 				if err != nil {
 					log.Printf("Error saving last checked proposal ID: %v", err)
@@ -93,11 +99,11 @@ func Run(cfg *config.Config, useMock bool) error {
 					continue
 				}
 				currentTime := time.Now()
-				if !votingEndAlertedProposals[proposal.ProposalID] && votingEndTime.Sub(currentTime) <= 24*time.Hour {
+				if !votingEndAlertedProposals[chainName][proposal.ProposalID] && votingEndTime.Sub(currentTime) <= 24*time.Hour {
 					shouldSendAlert := true
 
 					if cfg.VotingAlertBehaviorNearing == VotingAlertBehaviorOnlyIfNotVoted {
-						voted, err := proposals.CheckValidatorVoted(chain, proposal.ProposalID, cfg.ValidatorAddress, chain.SDKVersion)
+						voted, err := proposals.CheckValidatorVoted(chain, proposal.ProposalID, chain.ValidatorAddress, chain.APIVersion)
 						if err != nil {
 							log.Printf("%v", err)
 							continue
@@ -109,8 +115,15 @@ func Run(cfg *config.Config, useMock bool) error {
 					}
 
 					if shouldSendAlert {
-						sendDiscordAlert(cfg, chain, chainName, proposal, globalDiscordNotifier, AlertTypeVotingNearing)
-						votingEndAlertedProposals[proposal.ProposalID] = true
+						err = sendDiscordAlert(cfg, chain, chainName, proposal, globalDiscordNotifier, AlertTypeVotingNearing)
+						if err != nil {
+							log.Printf("Error sending alert for voting nearing end: %v", err)
+							continue
+						}
+						if votingEndAlertedProposals[chainName] == nil {
+							votingEndAlertedProposals[chainName] = make(map[string]bool)
+						}
+						votingEndAlertedProposals[chainName][proposal.ProposalID] = true
 						err = proposals.SaveAlertedProposals(FileVotingEndAlerted, votingEndAlertedProposals)
 						if err != nil {
 							log.Printf("Error saving voting end alerted proposals: %v", err)
@@ -124,18 +137,26 @@ func Run(cfg *config.Config, useMock bool) error {
 	return nil
 }
 
-func sendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName string, proposal proposals.Proposal, globalDiscordNotifier *notifiers.DiscordNotifier, alertType string) {
-	discordNotifier := &notifiers.DiscordNotifier{WebhookURL: chain.Alerts.Discord.Webhook}
-	if discordNotifier.WebhookURL == "" {
+func sendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName string, proposal proposals.Proposal, globalDiscordNotifier *notifiers.DiscordNotifier, alertType string) error {
+	var discordNotifier *notifiers.DiscordNotifier
+
+	if chain.Alerts.Discord.Enabled && chain.Alerts.Discord.Webhook != "" {
+		discordNotifier = &notifiers.DiscordNotifier{WebhookURL: chain.Alerts.Discord.Webhook}
+	} else if cfg.Discord.Enabled && cfg.Discord.Webhook != "" {
 		discordNotifier = globalDiscordNotifier
+	} else {
+		log.Printf("No valid Discord webhook URL available for chain %s", chainName)
+		return fmt.Errorf("no valid Discord webhook URL available for chain %s", chainName)
 	}
 
 	proposalDetail := utils.GenerateProposalDetailURL(cfg.ProposalDetailDomain, chainName, proposal.ProposalID)
+	if chain.ExplorerURL != "" {
+		proposalDetail = fmt.Sprintf("%s/%s", chain.ExplorerURL, proposal.ProposalID)
+	}
 
 	endTime, err := time.Parse(time.RFC3339Nano, proposal.VotingEndTime)
 	if err != nil {
-		fmt.Printf("Error parsing voting end time: %v\n", err)
-		return
+		return fmt.Errorf("error parsing voting end time: %v", err)
 	}
 	timeLeft := utils.FormatTimeLeft(endTime)
 
@@ -146,8 +167,7 @@ func sendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName st
 
 	votingStartTime, err := time.Parse(time.RFC3339, proposal.VotingStartTime)
 	if err != nil {
-		fmt.Println("Error parsing VotingStartTime:", err)
-		return
+		return fmt.Errorf("error parsing VotingStartTime: %v", err)
 	}
 
 	formattedVotingStartTime := votingStartTime.Format("2006-01-02 15:04")
@@ -156,6 +176,7 @@ func sendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName st
 		alertType, chainName, proposal.ProposalID, proposal.Title, description, formattedVotingStartTime, timeLeft, proposalDetail)
 	err = discordNotifier.SendAlert(message)
 	if err != nil {
-		log.Printf("Error sending Discord alert: %v", err)
+		return fmt.Errorf("error sending Discord alert: %v", err)
 	}
+	return nil
 }
