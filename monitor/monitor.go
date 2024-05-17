@@ -142,7 +142,7 @@ func sendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName st
 
 	if chain.Alerts.Discord.Enabled && chain.Alerts.Discord.Webhook != "" {
 		discordNotifier = &notifiers.DiscordNotifier{WebhookURL: chain.Alerts.Discord.Webhook}
-	} else if cfg.Discord.Enabled && cfg.Discord.Webhook != "" {
+	} else if chain.Alerts.Discord.Enabled && (cfg.Discord.Enabled && cfg.Discord.Webhook != "") {
 		discordNotifier = globalDiscordNotifier
 	} else {
 		log.Printf("No valid Discord webhook URL available for chain %s", chainName)
