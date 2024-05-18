@@ -1,7 +1,9 @@
 package monitor
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"strconv"
 	"time"
@@ -14,8 +16,8 @@ import (
 
 // Define constants for alert types and file names
 const (
-	AlertTypeNewProposal   = "New proposal on"
-	AlertTypeVotingNearing = "Voting period is nearing its end"
+	AlertTypeNewProposal   = "📝 New proposal on"
+	AlertTypeVotingNearing = "🕒 Voting period is nearing its end"
 	FileLastChecked        = "data/last_checked_proposals.json"
 	FileAlertedProposals   = "data/alerted_proposals.json"
 	FileVotingEndAlerted   = "data/voting_end_alerted_proposals.json"
@@ -172,11 +174,34 @@ func sendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName st
 
 	formattedVotingStartTime := votingStartTime.Format("2006-01-02 15:04")
 
-	message := fmt.Sprintf("**%s %s**: %s\n\n**Proposal title:** %s\n\n**Short text description:** %s\n\n**Vote start:** %s\n\n**Time left: %s**\n\n**Read full proposal details:**\n%s",
+	messageContent := fmt.Sprintf("**%s %s**: %s\n\n**Proposal title:** %s\n\n**Short text description:** %s\n\n**Vote start:** %s\n\n**Time left: %s**\n\n**Read full proposal details:**\n%s",
 		alertType, chainName, proposal.ProposalID, proposal.Title, description, formattedVotingStartTime, timeLeft, proposalDetail)
-	err = discordNotifier.SendAlert(message)
+	embed := notifiers.DiscordEmbed{
+		Color:       notifiers.MessageBoxColor,
+		Description: messageContent,
+	}
+
+	discordMessage := notifiers.DiscordMessage{
+		Content: "",
+		TTS:     false,
+		Embeds:  []notifiers.DiscordEmbed{embed},
+	}
+
+	payload, err := json.Marshal(discordMessage)
+	if err != nil {
+		return fmt.Errorf("error marshalling Discord message: %v", err)
+	}
+
+	resp, err := discordNotifier.SendPayload(payload)
 	if err != nil {
 		return fmt.Errorf("error sending Discord alert: %v", err)
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 204 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("error sending Discord alert, response status: %d, response body: %s", resp.StatusCode, string(body))
+	}
+
 	return nil
 }
