@@ -2,27 +2,41 @@ package notifiers
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
+
+var MessageBoxColor = 0x00ffff
+
+type DiscordEmbed struct {
+	Color       int    `json:"color"`
+	Description string `json:"description"`
+}
+
+type DiscordMessage struct {
+	Content string         `json:"content"`
+	TTS     bool           `json:"tts"`
+	Embeds  []DiscordEmbed `json:"embeds"`
+}
 
 type DiscordNotifier struct {
 	WebhookURL string
 }
 
-type DiscordMessage struct {
-	Content string `json:"content"`
+func (dn *DiscordNotifier) SendPayload(payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest("POST", dn.WebhookURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	return client.Do(req)
 }
 
-func (d *DiscordNotifier) SendAlert(message string) error {
-	msg := DiscordMessage{Content: message}
-	body, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.Post(d.WebhookURL, "application/json", bytes.NewBuffer(body))
+func (dn *DiscordNotifier) SendAlert(message string) error {
+	payload := []byte(`{"content": "` + message + `"}`)
+	resp, err := dn.SendPayload(payload)
 	if err != nil {
 		return err
 	}
