@@ -2,6 +2,7 @@ package proposals
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 )
@@ -9,6 +10,12 @@ import (
 type LastCheckedProposals struct {
 	Proposals map[string]int `json:"proposals"`
 }
+
+const (
+	FileLastChecked      = "data/last_checked_proposals.json"
+	FileAlertedProposals = "data/alerted_proposals.json"
+	FileVotingEndAlerted = "data/voting_end_alerted_proposals.json"
+)
 
 func GetLastCheckedProposalIDs(filename string) (map[string]int, error) {
 	data, err := ioutil.ReadFile(filename)
@@ -62,4 +69,23 @@ func SaveAlertedProposals(filename string, alertedProposals map[string]map[strin
 	}
 
 	return ioutil.WriteFile(filename, data, 0644)
+}
+
+func InitState() (map[string]int, map[string]map[string]bool, map[string]map[string]bool, error) {
+	lastChecked, err := GetLastCheckedProposalIDs(FileLastChecked)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error loading last checked proposal IDs, defaulting to empty: %v", err)
+	}
+
+	alertedProposals, err := GetAlertedProposals(FileAlertedProposals)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error loading alerted proposals, defaulting to empty: %v", err)
+	}
+
+	votingEndAlertedProposals, err := GetAlertedProposals(FileVotingEndAlerted)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error loading voting end alerted proposals, defaulting to empty: %v", err)
+	}
+
+	return lastChecked, alertedProposals, votingEndAlertedProposals, nil
 }
