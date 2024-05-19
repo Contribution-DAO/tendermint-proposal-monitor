@@ -61,6 +61,6 @@ func triggerMonitor(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/trigger-monitor", triggerMonitor)
-	log.Println("Server started on port 3000")
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Println("Server started on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
