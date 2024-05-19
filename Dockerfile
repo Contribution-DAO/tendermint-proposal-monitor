@@ -1,6 +1,6 @@
-FROM golang:1.21.6-alpine
+# Build stage
+FROM golang:1.21.6-alpine AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
 # Copy the Go module files first and download dependencies
@@ -10,10 +10,21 @@ RUN go mod download
 # Copy the rest of the application code
 COPY . .
 
-# Build the Go application (compiles main.go and other Go files into a binary named 'proposal_monitor')
-RUN go build -o proposal_monitor
+# Ensure the binary is built for linux/amd64 architecture
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o proposal_monitor
 
-EXPOSE 3000
+# Run stage
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+# Copy the built binary and configuration files from the builder stage
+COPY --from=builder /app/proposal_monitor .
+COPY --from=builder /app/config/config.yml ./config/config.yml
+
+# Expose port 8080
+EXPOSE 8080
 
 # Run the compiled application
 CMD ["./proposal_monitor"]
