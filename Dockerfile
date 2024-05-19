@@ -23,7 +23,12 @@ WORKDIR /app
 COPY --from=builder /app/proposal_monitor .
 COPY --from=builder /app/config/config.yml ./config/config.yml
 
-# Expose port 8080
+# Ensure the data directory is copied
+COPY --from=builder /app/data ./data
+
+# Ensure the data directory exists and has the correct permissions
+RUN mkdir -p data && chmod -R 755 data
+
 EXPOSE 8080
 
 # Run the compiled application
