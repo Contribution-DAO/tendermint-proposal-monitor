@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -9,7 +10,18 @@ import (
 	"tendermint_proposal_monitor/config"
 	"tendermint_proposal_monitor/notifiers"
 	"tendermint_proposal_monitor/proposals"
+	"tendermint_proposal_monitor/services"
 )
+
+type Handler struct {
+	Services *services.NewServices
+}
+
+func NewHandler(services *services.NewServices) *Handler {
+	return &Handler{
+		Services: services,
+	}
+}
 
 // Define constants for alert types and file names
 const (
@@ -22,8 +34,9 @@ const (
 	VotingAlertBehaviorOnlyIfNotVoted = "only_if_not_voted"
 )
 
-func Run(cfg *config.Config, useMock bool) error {
-	lastChecked, alertedProposals, votingEndAlertedProposals, err := proposals.InitState()
+func (h *Handler) Run(cfg *config.Configurations, useMock bool) error {
+	ctx := context.Background()
+	lastChecked, alertedProposals, votingEndAlertedProposals, err := h.Services.FirestoreHandler.InitState()
 	if err != nil {
 		log.Println(err)
 		return fmt.Errorf("error init state: %v", err)
@@ -66,11 +79,12 @@ func Run(cfg *config.Config, useMock bool) error {
 					alertedProposals[chainName] = make(map[string]bool)
 				}
 				alertedProposals[chainName][proposal.ProposalID] = true
-				err = proposals.SaveLastCheckedProposalIDs(proposals.FileLastChecked, lastChecked)
+				err = h.Services.FirestoreHandler.SaveLastCheckedProposalIDs(ctx, proposals.CollectionNameLastChecked, lastChecked)
 				if err != nil {
 					log.Printf("Error saving last checked proposal ID: %v", err)
 				}
-				err = proposals.SaveAlertedProposals(proposals.FileAlertedProposals, alertedProposals)
+
+				err = h.Services.FirestoreHandler.SaveAlertedProposals(ctx, proposals.CollectionNameAlertedProposals, alertedProposals)
 				if err != nil {
 					log.Printf("Error saving alerted proposals: %v", err)
 				}
@@ -84,6 +98,7 @@ func Run(cfg *config.Config, useMock bool) error {
 					continue
 				}
 				currentTime := time.Now()
+
 				if !votingEndAlertedProposals[chainName][proposal.ProposalID] && votingEndTime.Sub(currentTime) <= 24*time.Hour {
 					shouldSendAlert := true
 
@@ -109,7 +124,8 @@ func Run(cfg *config.Config, useMock bool) error {
 							votingEndAlertedProposals[chainName] = make(map[string]bool)
 						}
 						votingEndAlertedProposals[chainName][proposal.ProposalID] = true
-						err = proposals.SaveAlertedProposals(proposals.FileVotingEndAlerted, votingEndAlertedProposals)
+
+						err = h.Services.FirestoreHandler.SaveAlertedProposals(ctx, proposals.CollectionNameVotingEndAlerted, votingEndAlertedProposals)
 						if err != nil {
 							log.Printf("Error saving voting end alerted proposals: %v", err)
 						}

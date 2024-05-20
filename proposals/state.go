@@ -1,88 +1,133 @@
 package proposals
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"tendermint_proposal_monitor/config"
+	"tendermint_proposal_monitor/utils"
+
+	"cloud.google.com/go/firestore"
+	// "google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type LastCheckedProposals struct {
-	Proposals map[string]int `json:"proposals"`
+	Proposals []utils.ProposalKV `firestore:"proposals"`
+}
+
+type AlertedProposals struct {
+	Proposals []utils.OuterKV `firestore:"proposals"`
 }
 
 const (
-	FileLastChecked      = "data/last_checked_proposals.json"
-	FileAlertedProposals = "data/alerted_proposals.json"
-	FileVotingEndAlerted = "data/voting_end_alerted_proposals.json"
+	CollectionNameLastChecked      = "last_checked_proposals"
+	CollectionNameAlertedProposals = "alerted_proposals"
+	CollectionNameVotingEndAlerted = "voting_end_alerted_proposals"
 )
 
-func GetLastCheckedProposalIDs(filename string) (map[string]int, error) {
-	data, err := ioutil.ReadFile(filename)
+type FirestoreHandler struct {
+	FirestoreClient *firestore.Client
+	credentialsFile string
+	projectID       string
+	databaseID      string
+	collectionName  string
+}
+
+func New(cfg *config.Configurations) (*FirestoreHandler, error) {
+	ctx := context.Background()
+	client, err := firestore.NewClientWithDatabase(ctx, cfg.Storage.ProjectID, cfg.Storage.DatabaseID)
 	if err != nil {
-		if os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to create Firestore client: %v", err)
+	}
+
+	return &FirestoreHandler{
+		FirestoreClient: client,
+		credentialsFile: cfg.Storage.CredentialsPath,
+		projectID:       cfg.Storage.ProjectID,
+		databaseID:      cfg.Storage.DatabaseID,
+		collectionName:  cfg.Storage.CollectionName,
+	}, nil
+}
+
+func (c *FirestoreHandler) getFirestoreClient() *firestore.Client {
+	return c.FirestoreClient
+}
+
+func (c *FirestoreHandler) GetLastCheckedProposalIDs(ctx context.Context) (map[string]int, error) {
+	client := c.getFirestoreClient()
+
+	doc := client.Collection(c.collectionName).Doc(CollectionNameLastChecked)
+	var lastChecked LastCheckedProposals
+	dsnap, err := doc.Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
 			return make(map[string]int), nil
 		}
 		return nil, err
 	}
 
-	var lastChecked LastCheckedProposals
-	err = json.Unmarshal(data, &lastChecked)
+	err = dsnap.DataTo(&lastChecked)
 	if err != nil {
 		return nil, err
 	}
 
-	return lastChecked.Proposals, nil
+	return utils.SliceToMap(lastChecked.Proposals), nil
 }
 
-func SaveLastCheckedProposalIDs(filename string, lastChecked map[string]int) error {
-	data, err := json.Marshal(LastCheckedProposals{Proposals: lastChecked})
-	if err != nil {
-		return err
-	}
+func (c *FirestoreHandler) SaveLastCheckedProposalIDs(ctx context.Context, docID string, lastChecked map[string]int) error {
+	client := c.getFirestoreClient()
 
-	return ioutil.WriteFile(filename, data, 0644)
+	doc := client.Collection(c.collectionName).Doc(docID)
+	entity := LastCheckedProposals{Proposals: utils.MapToSlice(lastChecked)}
+	_, err := doc.Set(ctx, entity)
+	return err
 }
 
-func GetAlertedProposals(filename string) (map[string]map[string]bool, error) {
-	data, err := ioutil.ReadFile(filename)
+func (c *FirestoreHandler) GetAlertedProposals(ctx context.Context, docID string) (map[string]map[string]bool, error) {
+	client := c.getFirestoreClient()
+
+	doc := client.Collection(c.collectionName).Doc(docID)
+	var entity AlertedProposals
+	dsnap, err := doc.Get(ctx)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if status.Code(err) == codes.NotFound {
 			return make(map[string]map[string]bool), nil
 		}
 		return nil, err
 	}
 
-	var alertedProposals map[string]map[string]bool
-	err = json.Unmarshal(data, &alertedProposals)
+	err = dsnap.DataTo(&entity)
 	if err != nil {
 		return nil, err
 	}
 
-	return alertedProposals, nil
+	return utils.NestedSliceToMap(entity.Proposals), nil
 }
 
-func SaveAlertedProposals(filename string, alertedProposals map[string]map[string]bool) error {
-	data, err := json.Marshal(alertedProposals)
-	if err != nil {
-		return err
-	}
+func (c *FirestoreHandler) SaveAlertedProposals(ctx context.Context, docID string, alertedProposals map[string]map[string]bool) error {
+	client := c.getFirestoreClient()
 
-	return ioutil.WriteFile(filename, data, 0644)
+	doc := client.Collection(c.collectionName).Doc(docID)
+	entity := AlertedProposals{Proposals: utils.MapToNestedSlice(alertedProposals)}
+	_, err := doc.Set(ctx, entity)
+	return err
 }
 
-func InitState() (map[string]int, map[string]map[string]bool, map[string]map[string]bool, error) {
-	lastChecked, err := GetLastCheckedProposalIDs(FileLastChecked)
+func (c *FirestoreHandler) InitState() (map[string]int, map[string]map[string]bool, map[string]map[string]bool, error) {
+	ctx := context.Background()
+
+	lastChecked, err := c.GetLastCheckedProposalIDs(ctx)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error loading last checked proposal IDs, defaulting to empty: %v", err)
 	}
 
-	alertedProposals, err := GetAlertedProposals(FileAlertedProposals)
+	alertedProposals, err := c.GetAlertedProposals(ctx, CollectionNameAlertedProposals)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error loading alerted proposals, defaulting to empty: %v", err)
 	}
 
-	votingEndAlertedProposals, err := GetAlertedProposals(FileVotingEndAlerted)
+	votingEndAlertedProposals, err := c.GetAlertedProposals(ctx, CollectionNameVotingEndAlerted)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error loading voting end alerted proposals, defaulting to empty: %v", err)
 	}
