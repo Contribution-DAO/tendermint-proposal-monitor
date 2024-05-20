@@ -6,11 +6,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
+type Configurations struct {
 	ProposalDetailDomain       string                 `yaml:"proposal_detail_domain"`
 	VotingAlertBehaviorNearing string                 `yaml:"voting_alert_behavior_nearing"`
 	Discord                    DiscordConfig          `yaml:"discord"`
 	Chains                     map[string]ChainConfig `yaml:"chains"`
+	Storage                    Storage                `yaml:"storage"`
 }
 
 type DiscordConfig struct {
@@ -34,13 +35,20 @@ type AlertConfig struct {
 	} `yaml:"discord"`
 }
 
-func LoadConfig(filename string) (*Config, error) {
+type Storage struct {
+	CredentialsPath string `yaml:"credentials_path"`
+	ProjectID       string `yaml:"project_id"`
+	DatabaseID      string `yaml:"database_id"`
+	CollectionName  string `yaml:"table_name"`
+}
+
+func LoadConfig(filename string) (*Configurations, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg Config
+	var cfg Configurations
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return nil, err

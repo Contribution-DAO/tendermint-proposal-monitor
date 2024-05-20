@@ -13,7 +13,7 @@ import (
 	"tendermint_proposal_monitor/utils"
 )
 
-func SendDiscordAlert(cfg *config.Config, chain config.ChainConfig, chainName string, proposal proposals.Proposal, globalDiscordNotifier *notifiers.DiscordNotifier, alertType string) error {
+func SendDiscordAlert(cfg *config.Configurations, chain config.ChainConfig, chainName string, proposal proposals.Proposal, globalDiscordNotifier *notifiers.DiscordNotifier, alertType string) error {
 	var discordNotifier *notifiers.DiscordNotifier
 
 	if chain.Alerts.Discord.Enabled && chain.Alerts.Discord.Webhook != "" {

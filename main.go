@@ -7,10 +7,12 @@ import (
 	"os"
 	"tendermint_proposal_monitor/config"
 	"tendermint_proposal_monitor/monitor"
+	"tendermint_proposal_monitor/proposals"
+	"tendermint_proposal_monitor/services"
 )
 
 var (
-	cfg       *config.Config
+	cfg       *config.Configurations
 	globalErr error
 	useMock   bool
 )
@@ -45,11 +47,20 @@ func triggerMonitor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	firestoreHandler, err := proposals.New(cfg)
+	if err != nil {
+		log.Printf("Error creating FirestoreHandler: %v", err)
+		http.Error(w, "Error creating FirestoreHandler", http.StatusInternalServerError)
+		return
+	}
+	s := services.New(firestoreHandler, cfg)
+	h := monitor.NewHandler(s)
+
 	// Check for mock query parameter
 	mock := r.URL.Query().Get("mock")
 	useMock := mock == "true"
 
-	err := monitor.Run(cfg, useMock)
+	err = h.Run(cfg, useMock)
 	if err != nil {
 		log.Printf("Error running monitor: %v", err)
 		http.Error(w, "Error running monitor", http.StatusInternalServerError)
