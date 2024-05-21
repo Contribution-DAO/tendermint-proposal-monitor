@@ -27,7 +27,11 @@ func SendDiscordAlert(cfg *config.Configurations, chain config.ChainConfig, chai
 
 	proposalDetail := utils.GenerateProposalDetailURL(cfg.ProposalDetailDomain, chainName, proposal.ProposalID)
 	if chain.ExplorerURL != "" {
-		proposalDetail = fmt.Sprintf("%s/%s", chain.ExplorerURL, proposal.ProposalID)
+		if chain.ExplorerURL == "-" {
+			proposalDetail = "-"
+		} else {
+			proposalDetail = fmt.Sprintf("%s/%s", chain.ExplorerURL, proposal.ProposalID)
+		}
 	}
 
 	endTime, err := time.Parse(time.RFC3339Nano, proposal.VotingEndTime)
