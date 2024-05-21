@@ -25,6 +25,13 @@ Create a `config.yml` file in the `config/` directory with the following structu
 proposal_detail_domain: "https://www.mintscan.io" # The base URL for viewing proposal details. This can be customized if you use a different domain.
 voting_alert_behavior_nearing: "only_if_not_voted" # Specifies when to send alerts near the end of the voting period. Options: "always" to always send alerts, "only_if_not_voted" to send alerts only if the validator hasn't voted.
 
+# Persistence storage
+storage:
+  credentials_path: "firestore_path"
+  project_id: "project_id"
+  database_id: "database_id"
+  table_name: "collection_table_name"
+
 #Discord Settings
 discord:
   enabled: yes

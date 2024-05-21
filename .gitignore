@@ -5,12 +5,6 @@ local*
 .idea
 .DS_Store
 
-data/last_checked_proposals.json
-data/voting_end_alerted_proposals.json
-data/alerted_proposals.json
-
-serviceAccountKey.json
-
 *.exe
 *.exe~
 *.dll
