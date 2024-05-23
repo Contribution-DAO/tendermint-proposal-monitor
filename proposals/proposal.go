@@ -58,7 +58,7 @@ func mockProposals() []Proposal {
 }
 
 func Fetch(chain config.ChainConfig, sdkVersion string, useMock bool) ([]Proposal, error) {
-	apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals", chain.APIEndpoint, chain.APIVersion)
+	apiEndpoint := fmt.Sprintf("%s/cosmos/gov/%s/proposals?pagination.reverse=true", chain.APIEndpoint, chain.APIVersion)
 	if useMock {
 		return mockProposals(), nil
 	}
