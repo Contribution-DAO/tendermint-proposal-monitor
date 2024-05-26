@@ -6,43 +6,53 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Configurations struct {
+	ProposalDetailDomain       string                 `yaml:"proposal_detail_domain"`
+	VotingAlertBehaviorNearing string                 `yaml:"voting_alert_behavior_nearing"`
+	Discord                    DiscordConfig          `yaml:"discord"`
+	Chains                     map[string]ChainConfig `yaml:"chains"`
+	Storage                    Storage                `yaml:"storage"`
+}
+
 type DiscordConfig struct {
 	Enabled bool   `yaml:"enabled"`
 	Webhook string `yaml:"webhook"`
 }
 
-type HealthcheckConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	PingURL  string `yaml:"ping_url"`
-	PingRate int    `yaml:"ping_rate"`
-}
-
-type ChainAlertConfig struct {
-	APIEndpoint string        `yaml:"api_endpoint"`
-	Discord     DiscordConfig `yaml:"discord"`
-}
-
 type ChainConfig struct {
-	ChainID string           `yaml:"chain_id"`
-	Alerts  ChainAlertConfig `yaml:"alerts"`
+	ChainID          string      `yaml:"chain_id"`
+	ValidatorAddress string      `yaml:"validator_address"`
+	APIVersion       string      `yaml:"api_version"`
+	APIEndpoint      string      `yaml:"api_endpoint"`
+	ExplorerURL      string      `yaml:"explorer_url"`
+	Alerts           AlertConfig `yaml:"alerts"`
 }
 
-type Config struct {
-	CheckInterval int                    `yaml:"check_interval"`
-	Discord       DiscordConfig          `yaml:"discord"`
-	Healthcheck   HealthcheckConfig      `yaml:"healthcheck"`
-	Chains        map[string]ChainConfig `yaml:"chains"`
+type AlertConfig struct {
+	Discord struct {
+		Enabled bool   `yaml:"enabled"`
+		Webhook string `yaml:"webhook"`
+	} `yaml:"discord"`
 }
 
-func LoadConfig(filename string) (*Config, error) {
+type Storage struct {
+	CredentialsPath string `yaml:"credentials_path"`
+	ProjectID       string `yaml:"project_id"`
+	DatabaseID      string `yaml:"database_id"`
+	CollectionName  string `yaml:"table_name"`
+}
+
+func LoadConfig(filename string) (*Configurations, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	var config Config
-	err = yaml.Unmarshal(data, &config)
+
+	var cfg Configurations
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return nil, err
 	}
-	return &config, nil
+
+	return &cfg, nil
 }

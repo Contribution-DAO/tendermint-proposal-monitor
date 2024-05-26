@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  proposal_monitor:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - CONFIG_FILE=config/config.yml
+    restart: unless-stopped
