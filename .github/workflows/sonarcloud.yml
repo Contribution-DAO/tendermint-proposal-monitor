@@ -5,6 +5,7 @@ on:
       - main
       - develop
       - sonarcloud
+      - refactor
   pull_request:
     types: [opened, synchronize, reopened]
 
