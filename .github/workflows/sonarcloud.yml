@@ -5,6 +5,7 @@ on:
       - main
       - develop
       - sonarcloud
+      - refactor
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -32,8 +33,6 @@ jobs:
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: Contribution-DAO_tendermint-proposal-monitor
-          SONAR_ORGANIZATION: cdao
         run: |
           sonar-scanner \
             -Dsonar.projectKey=Contribution-DAO_tendermint-proposal-monitor \
