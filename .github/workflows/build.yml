@@ -8,7 +8,6 @@ on:
       - refactor
   pull_request:
     types: [opened, synchronize, reopened]
-
 jobs:
   sonarcloud:
     name: SonarCloud
@@ -18,24 +17,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21.6'
-
-      - name: Install dependencies
-        run: go mod download
-
       - name: Install SonarScanner
         run: npm install -g sonarqube-scanner
-
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar-scanner \
-            -Dsonar.projectKey=Contribution-DAO_tendermint-proposal-monitor \
-            -Dsonar.organization=cdao \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
