@@ -47,17 +47,13 @@ func (h *Handler) Run(cfg *config.Configurations, useMock bool) error {
 	log.Printf("Checking for new proposals...")
 
 	for chainName, chain := range cfg.Chains {
-		propList, err := proposals.Fetch(chain, chain.APIVersion, useMock)
+		propList, err := fetchProposals(chain, useMock, chainName)
 		if err != nil {
-			log.Printf("Error fetching proposals for chain %s: %v", chainName, err)
 			continue
 		}
 
 		for _, proposal := range propList {
-			if statusValue, exists := proposals.ProposalStatusValue[proposal.Status]; exists &&
-				(statusValue == proposals.ProposalStatusValue["PROPOSAL_STATUS_PASSED"] ||
-					statusValue == proposals.ProposalStatusValue["PROPOSAL_STATUS_REJECTED"] ||
-					statusValue == proposals.ProposalStatusValue["PROPOSAL_STATUS_FAILED"]) {
+			if shouldSkipProposal(proposal) {
 				continue
 			}
 
@@ -136,4 +132,22 @@ func (h *Handler) Run(cfg *config.Configurations, useMock bool) error {
 	}
 
 	return nil
+}
+
+func fetchProposals(chain config.ChainConfig, useMock bool, chainName string) ([]proposals.Proposal, error) {
+	propList, err := proposals.Fetch(chain, chain.APIVersion, useMock)
+	if err != nil {
+		log.Printf("Error fetching proposals for chain %s: %v", chainName, err)
+	}
+	return propList, err
+}
+
+func shouldSkipProposal(proposal proposals.Proposal) bool {
+	if statusValue, exists := proposals.ProposalStatusValue[proposal.Status]; exists &&
+		(statusValue == proposals.ProposalStatusValue["PROPOSAL_STATUS_PASSED"] ||
+			statusValue == proposals.ProposalStatusValue["PROPOSAL_STATUS_REJECTED"] ||
+			statusValue == proposals.ProposalStatusValue["PROPOSAL_STATUS_FAILED"]) {
+		return true
+	}
+	return false
 }
