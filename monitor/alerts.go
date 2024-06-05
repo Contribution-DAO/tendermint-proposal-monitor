@@ -13,18 +13,42 @@ import (
 	"tendermint_proposal_monitor/utils"
 )
 
-func SendDiscordAlert(cfg *config.Configurations, chain config.ChainConfig, chainName string, proposal proposals.Proposal, globalDiscordNotifier *notifiers.DiscordNotifier, alertType string) error {
-	var discordNotifier *notifiers.DiscordNotifier
+type AlertDetails struct {
+	ProposalDetail           string
+	TimeLeft                 string
+	Description              string
+	FormattedVotingStartTime string
+}
 
-	if chain.Alerts.Discord.Enabled && chain.Alerts.Discord.Webhook != "" {
-		discordNotifier = &notifiers.DiscordNotifier{WebhookURL: chain.Alerts.Discord.Webhook}
-	} else if chain.Alerts.Discord.Enabled && (cfg.Discord.Enabled && cfg.Discord.Webhook != "") {
-		discordNotifier = globalDiscordNotifier
-	} else {
-		log.Printf("No valid Discord webhook URL available for chain %s", chainName)
-		return fmt.Errorf("no valid Discord webhook URL available for chain %s", chainName)
+func SendDiscordAlert(cfg *config.Configurations, chain config.ChainConfig, chainName string, proposal proposals.Proposal, globalDiscordNotifier *notifiers.DiscordNotifier, alertType string) error {
+	discordNotifier, err := getDiscordNotifier(cfg, chain, chainName, globalDiscordNotifier)
+	if err != nil {
+		return err
 	}
 
+	alertDetails, err := generateAlertDetails(cfg, chain, chainName, proposal)
+	if err != nil {
+		return err
+	}
+
+	messageContent := fmt.Sprintf("**%s %s**: %s\n\n**Proposal title:** %s\n\n**Short text description:** %s\n\n**Vote start:** %s\n\n**Time left: %s**\n\n**Read full proposal details:**\n%s",
+		alertType, chainName, proposal.ProposalID, proposal.Title, alertDetails.Description, alertDetails.FormattedVotingStartTime, alertDetails.TimeLeft, alertDetails.ProposalDetail)
+
+	return sendDiscordMessage(discordNotifier, messageContent)
+}
+
+func getDiscordNotifier(cfg *config.Configurations, chain config.ChainConfig, chainName string, globalDiscordNotifier *notifiers.DiscordNotifier) (*notifiers.DiscordNotifier, error) {
+	if chain.Alerts.Discord.Enabled && chain.Alerts.Discord.Webhook != "" {
+		return &notifiers.DiscordNotifier{WebhookURL: chain.Alerts.Discord.Webhook}, nil
+	} else if chain.Alerts.Discord.Enabled && (cfg.Discord.Enabled && cfg.Discord.Webhook != "") {
+		return globalDiscordNotifier, nil
+	} else {
+		log.Printf("No valid Discord webhook URL available for chain %s", chainName)
+		return nil, fmt.Errorf("no valid Discord webhook URL available for chain %s", chainName)
+	}
+}
+
+func generateAlertDetails(cfg *config.Configurations, chain config.ChainConfig, chainName string, proposal proposals.Proposal) (*AlertDetails, error) {
 	proposalDetail := utils.GenerateProposalDetailURL(cfg.ProposalDetailDomain, chainName, proposal.ProposalID)
 	if chain.ExplorerURL != "" {
 		if chain.ExplorerURL == "-" {
@@ -36,7 +60,7 @@ func SendDiscordAlert(cfg *config.Configurations, chain config.ChainConfig, chai
 
 	endTime, err := time.Parse(time.RFC3339Nano, proposal.VotingEndTime)
 	if err != nil {
-		return fmt.Errorf("error parsing voting end time: %v", err)
+		return nil, fmt.Errorf("error parsing voting end time: %v", err)
 	}
 	timeLeft := utils.FormatTimeLeft(endTime)
 
@@ -47,13 +71,20 @@ func SendDiscordAlert(cfg *config.Configurations, chain config.ChainConfig, chai
 
 	votingStartTime, err := time.Parse(time.RFC3339, proposal.VotingStartTime)
 	if err != nil {
-		return fmt.Errorf("error parsing VotingStartTime: %v", err)
+		return nil, fmt.Errorf("error parsing VotingStartTime: %v", err)
 	}
 
 	formattedVotingStartTime := votingStartTime.Format("2006-01-02 15:04")
 
-	messageContent := fmt.Sprintf("**%s %s**: %s\n\n**Proposal title:** %s\n\n**Short text description:** %s\n\n**Vote start:** %s\n\n**Time left: %s**\n\n**Read full proposal details:**\n%s",
-		alertType, chainName, proposal.ProposalID, proposal.Title, description, formattedVotingStartTime, timeLeft, proposalDetail)
+	return &AlertDetails{
+		ProposalDetail:           proposalDetail,
+		TimeLeft:                 timeLeft,
+		Description:              description,
+		FormattedVotingStartTime: formattedVotingStartTime,
+	}, nil
+}
+
+func sendDiscordMessage(discordNotifier *notifiers.DiscordNotifier, messageContent string) error {
 	embed := notifiers.DiscordEmbed{
 		Color:       notifiers.MessageBoxColor,
 		Description: messageContent,
