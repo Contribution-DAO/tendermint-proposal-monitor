@@ -14,7 +14,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o proposal_monitor
 
 # Run stage
-FROM alpine:latest
+FROM alpine:3.20.0
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
