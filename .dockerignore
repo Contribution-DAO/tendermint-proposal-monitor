@@ -7,11 +7,14 @@ proposal_monitor
 # Ignore the vendor directory (if you are not using vendoring)
 vendor
 
-# Ignore the config files (optional, if they are not needed in the Docker image)
-<!-- config/*.yml -->
+# Ignore config example files and optional config files
+config/example.config.yml
 
 # Ignore other unnecessary files and directories
 .git
 .gitignore
 Dockerfile
 README.md
+docker-compose.yml
+**/*.md
+**/*_test.go
