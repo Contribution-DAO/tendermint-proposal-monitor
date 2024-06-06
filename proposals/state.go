@@ -28,10 +28,10 @@ const (
 
 type FirestoreHandler struct {
 	FirestoreClient *firestore.Client
-	credentialsFile string
-	projectID       string
-	databaseID      string
-	collectionName  string
+	CredentialsFile string
+	ProjectID       string
+	DatabaseID      string
+	CollectionName  string
 }
 
 func New(cfg *config.Configurations) (*FirestoreHandler, error) {
@@ -43,10 +43,10 @@ func New(cfg *config.Configurations) (*FirestoreHandler, error) {
 
 	return &FirestoreHandler{
 		FirestoreClient: client,
-		credentialsFile: cfg.Storage.CredentialsPath,
-		projectID:       cfg.Storage.ProjectID,
-		databaseID:      cfg.Storage.DatabaseID,
-		collectionName:  cfg.Storage.CollectionName,
+		CredentialsFile: cfg.Storage.CredentialsPath,
+		ProjectID:       cfg.Storage.ProjectID,
+		DatabaseID:      cfg.Storage.DatabaseID,
+		CollectionName:  cfg.Storage.CollectionName,
 	}, nil
 }
 
@@ -57,7 +57,7 @@ func (c *FirestoreHandler) getFirestoreClient() *firestore.Client {
 func (c *FirestoreHandler) GetLastCheckedProposalIDs(ctx context.Context) (map[string]int, error) {
 	client := c.getFirestoreClient()
 
-	doc := client.Collection(c.collectionName).Doc(CollectionNameLastChecked)
+	doc := client.Collection(c.CollectionName).Doc(CollectionNameLastChecked)
 	var lastChecked LastCheckedProposals
 	dsnap, err := doc.Get(ctx)
 	if err != nil {
@@ -78,7 +78,7 @@ func (c *FirestoreHandler) GetLastCheckedProposalIDs(ctx context.Context) (map[s
 func (c *FirestoreHandler) SaveLastCheckedProposalIDs(ctx context.Context, docID string, lastChecked map[string]int) error {
 	client := c.getFirestoreClient()
 
-	doc := client.Collection(c.collectionName).Doc(docID)
+	doc := client.Collection(c.CollectionName).Doc(docID)
 	entity := LastCheckedProposals{Proposals: utils.MapToSlice(lastChecked)}
 	_, err := doc.Set(ctx, entity)
 	return err
@@ -87,7 +87,7 @@ func (c *FirestoreHandler) SaveLastCheckedProposalIDs(ctx context.Context, docID
 func (c *FirestoreHandler) GetAlertedProposals(ctx context.Context, docID string) (map[string]map[string]bool, error) {
 	client := c.getFirestoreClient()
 
-	doc := client.Collection(c.collectionName).Doc(docID)
+	doc := client.Collection(c.CollectionName).Doc(docID)
 	var entity AlertedProposals
 	dsnap, err := doc.Get(ctx)
 	if err != nil {
@@ -108,7 +108,7 @@ func (c *FirestoreHandler) GetAlertedProposals(ctx context.Context, docID string
 func (c *FirestoreHandler) SaveAlertedProposals(ctx context.Context, docID string, alertedProposals map[string]map[string]bool) error {
 	client := c.getFirestoreClient()
 
-	doc := client.Collection(c.collectionName).Doc(docID)
+	doc := client.Collection(c.CollectionName).Doc(docID)
 	entity := AlertedProposals{Proposals: utils.MapToNestedSlice(alertedProposals)}
 	_, err := doc.Set(ctx, entity)
 	return err
