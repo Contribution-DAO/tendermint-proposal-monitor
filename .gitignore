@@ -4,6 +4,7 @@ local*
 
 .idea
 .DS_Store
+.vscode
 
 *.exe
 *.exe~
