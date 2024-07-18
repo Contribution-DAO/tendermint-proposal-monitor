@@ -27,5 +27,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 
 EXPOSE 8080
 
+# Define a volume for /var/log
+VOLUME ["/var/log"]
+
 # Run the compiled application
 CMD ["./proposal_monitor"]
