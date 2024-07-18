@@ -11,6 +11,8 @@ services:
         reservations:
           cpus: "0.25"
           memory: "128M"
+    networks:
+      - backend
     ports:
       - "3000:3000"
     volumes:
@@ -18,3 +20,7 @@ services:
     environment:
       - CONFIG_FILE=config/config.yml
     restart: unless-stopped
+
+networks:
+  backend:
+    driver: bridge
