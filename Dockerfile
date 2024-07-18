@@ -21,6 +21,10 @@ RUN apk --no-cache add ca-certificates
 COPY --from=builder /app/proposal_monitor .
 COPY --from=builder /app/config/config.yml ./config/config.yml
 
+# Defind healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost/health || exit 1
+
 EXPOSE 8080
 
 # Run the compiled application
