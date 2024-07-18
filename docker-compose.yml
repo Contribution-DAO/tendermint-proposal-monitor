@@ -11,6 +11,9 @@ services:
         reservations:
           cpus: "0.25"
           memory: "128M"
+    cap_drop:
+      - NET_ADMIN
+      - SYS_ADMIN
     networks:
       - backend
     ports:
