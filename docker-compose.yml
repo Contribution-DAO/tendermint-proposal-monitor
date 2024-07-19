@@ -1,8 +1,32 @@
-version: '3.8'
+version: "3.8"
 
 services:
   proposal_monitor:
     build: .
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "512M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+    cap_drop:
+      - NET_ADMIN
+      - SYS_ADMIN
+    networks:
+      - backend
     ports:
       - "3000:3000"
     volumes:
@@ -10,3 +34,7 @@ services:
     environment:
       - CONFIG_FILE=config/config.yml
     restart: unless-stopped
+
+networks:
+  backend:
+    driver: bridge
