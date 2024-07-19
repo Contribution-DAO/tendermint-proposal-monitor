@@ -4,7 +4,7 @@ FROM golang:1.21.6-alpine AS builder
 WORKDIR /app/src
 
 # Copy the Go module files first and download dependencies
-COPY go.mod go.sum ./
+COPY ./src/go.mod ./src/go.sum ./
 RUN go mod download
 
 # Copy the rest of the application code
@@ -18,12 +18,12 @@ FROM alpine:3.20.0
 RUN apk --no-cache add ca-certificates
 
 # Copy the built binary and configuration files from the builder stage
-COPY --from=builder /app/proposal_monitor .
-COPY --from=builder /app/config/config.yml ./config/config.yml
+COPY --from=builder /app/src/proposal_monitor .
+COPY --from=builder /app/src/config/config.yml ./src/config/config.yml
 
 # Defind healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/health || exit 1
+  CMD curl -f http://localhost:8080/health || exit 1
 
 EXPOSE 8080
 

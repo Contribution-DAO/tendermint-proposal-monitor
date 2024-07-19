@@ -19,7 +19,7 @@ var (
 
 func init() {
 	flag.BoolVar(&useMock, "mock", false, "Use mock data for testing")
-	configFile := flag.String("config", getEnv("CONFIG_FILE", "config/config.yml"), "Path to configuration file")
+	configFile := flag.String("config", getEnv("CONFIG_FILE", "src/config/config.yml"), "Path to configuration file")
 	flag.Parse()
 
 	log.Println("Starting Proposal Monitor Service...")
@@ -70,8 +70,14 @@ func triggerMonitor(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Monitor triggered successfully"))
 }
 
+func healthcheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func main() {
 	http.HandleFunc("/trigger-monitor", triggerMonitor)
+	http.HandleFunc("/health", healthcheck)
 	log.Println("Server started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
