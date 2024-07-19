@@ -28,11 +28,11 @@ services:
     networks:
       - backend
     ports:
-      - "3000:3000"
+      - "3000:8080"
     volumes:
-      - ./config:/app/config
+      - ./src/config:/app/src/config
     environment:
-      - CONFIG_FILE=config/config.yml
+      - CONFIG_FILE=src/config/config.yml
     restart: unless-stopped
 
 networks:
